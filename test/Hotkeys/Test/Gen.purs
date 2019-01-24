@@ -10,17 +10,17 @@ import Data.List as List
 import Data.Maybe (fromJust)
 import Data.NonEmpty ((:|))
 import Data.Tuple (Tuple(..))
-import Hotkeys.KeyMap (ScopedKeyBindingsTree(..))
+import Hotkeys.KeyMap (Binding)
 import Partial.Unsafe (unsafePartial)
 import Test.QuickCheck (class Arbitrary, arbitrary)
 import Test.QuickCheck.Gen (Gen)
 import Test.QuickCheck.Gen as G
 
-type Cmd = { scope :: Array Int
+type Cmd = { scope :: Int
            , n :: Int
            }
 
-newtype S = S (ScopedKeyBindingsTree (Array Int) Cmd)
+newtype S = S (Array { scope :: Int, bindings :: Array (Binding Cmd)})
 
 derive instance genericS :: Generic S _
 
@@ -33,27 +33,17 @@ instance arbitraryS :: Arbitrary S where
 genS :: Gen S
 genS = do
   frequentKeySequence <- genKeySequence
-  tree <- genTree frequentKeySequence [0] 0
-  pure $ S tree
+  numScopes <- G.chooseInt 0 5
+  scopeBindings <- G.vectorOf numScopes $ genScope frequentKeySequence 0
+  pure $ S scopeBindings
   where
-    genTree frequentKeySequence parentScope i = G.sized \size -> do
-      let scope = Array.snoc parentScope i
-          maxChildren = size
-      childCount <- G.chooseInt 0 maxChildren
-      children <- G.resize (size / 2) $ genChildren frequentKeySequence scope childCount 0
+    genScope frequentKeySequence i = do
+      let scope = i
       bindings <- genBindings frequentKeySequence scope
-      pure $ Scope
-        { id: scope
-        , bindings
-        }
-        children
-    genChildren frequentKeySequence parentScope childCount i
-      | i == childCount = pure []
-      | otherwise = do
-          child <- genTree frequentKeySequence parentScope i
-          rest <- genChildren frequentKeySequence parentScope childCount (i+1)
-          pure $ [child] <> rest
-    genBindings frequentKeySequence scope = G.arrayOf (genBinding frequentKeySequence scope)
+      pure { scope, bindings }
+    genBindings frequentKeySequence scope = do
+      n <- G.chooseInt 0 10
+      G.vectorOf n (genBinding frequentKeySequence scope)
     genBinding frequentKeySequence scope = do
       n <- arbitrary
       let command = { scope, n }
@@ -72,3 +62,9 @@ genS = do
       keys <- G.vectorOf len arbitrary
       let nonEmptyKeys = unsafePartial $ fromJust $ NEA.fromArray keys
       pure nonEmptyKeys
+
+genScopes :: S -> Gen (Array Int)
+genScopes (S sb) = do
+  let scopes = map _.scope sb
+  count <- G.chooseInt 0 (Array.length scopes)
+  Array.take count <$> G.shuffle scopes
