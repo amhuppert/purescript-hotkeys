@@ -8,6 +8,7 @@ import Data.Array.NonEmpty as NEA
 import Data.Foldable (find)
 import Data.Map as Map
 import Data.Maybe (Maybe(..), fromMaybe, isJust)
+import Data.Tuple (Tuple(..))
 import Effect (Effect)
 import Effect.Aff (Aff)
 import Effect.Class (liftEffect)
@@ -210,6 +211,73 @@ runTests = run [Reporter.consoleReporter] do
     Map.member keyA commands `shouldEqual` true
     Map.member keyB commands `shouldEqual` true
     Map.member keyC commands `shouldEqual` true
+  it "When two scopes have bindings for the command prefix, the commands in \
+     \both scopes under that prefix are merged together." do
+    let scope0Keys = NEA.cons' (Keys.char 'f') [ Keys.char 'd' ]
+        scope1Keys = NEA.cons' (Keys.char 'f') [ Keys.char 'f' ]
+        tree =
+          [ { scope: "scope0"
+            , bindings:
+              [ { command: "scope0-cmd1"
+                , keys: scope0Keys
+                }
+              ]
+            }
+          , { scope: "scope1"
+            , bindings:
+              [ { command: "scope1-cmd1"
+                , keys: scope1Keys
+                }
+              ]
+            }
+          ]
+        keyMap = KeyMap.create tree
+        expected = Map.fromFoldable 
+          [ Tuple scope0Keys
+                  { command: "scope0-cmd1"
+                  , keys: scope0Keys
+                  }
+          , Tuple scope1Keys
+                  { command: "scope1-cmd1"
+                  , keys: scope1Keys
+                  }
+          ]
+        activeScopes = [ "scope0", "scope1" ]
+    KeyMap.getAllAccessibleCommands activeScopes keyMap `shouldEqual` expected
+  it "When two scopes have bindings for the command prefix, the commands in \
+     \both scopes under that prefix are merged together. (recursive)" do
+    -- Bindings: "f f a" and "f f b"
+    let scope0Keys = NEA.cons' (Keys.char 'f') [ Keys.char 'f', Keys.char 'a' ]
+        scope1Keys = NEA.cons' (Keys.char 'f') [ Keys.char 'f', Keys.char 'b' ]
+        tree =
+          [ { scope: "scope0"
+            , bindings:
+              [ { command: "scope0-cmd1"
+                , keys: scope0Keys
+                }
+              ]
+            }
+          , { scope: "scope1"
+            , bindings:
+              [ { command: "scope1-cmd1"
+                , keys: scope1Keys
+                }
+              ]
+            }
+          ]
+        keyMap = KeyMap.create tree
+        expected = Map.fromFoldable 
+          [ Tuple scope0Keys
+                  { command: "scope0-cmd1"
+                  , keys: scope0Keys
+                  }
+          , Tuple scope1Keys
+                  { command: "scope1-cmd1"
+                  , keys: scope1Keys
+                  }
+          ]
+        activeScopes = [ "scope0", "scope1" ]
+    KeyMap.getAllAccessibleCommands activeScopes keyMap `shouldEqual` expected
   where
     singleChar = NEA.singleton <<< Keys.char
 
