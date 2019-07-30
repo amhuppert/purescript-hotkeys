@@ -154,7 +154,10 @@ instance arbitraryKeyValue :: Arbitrary KeyValue where
 
 -- | Gets the value of the key pressed by the user while taking into consideration the state of the modifier keys as well as the keyboard locale/layout.
 -- |
--- | Additionally, this function attempts to resolve inconsistencies across different browsers. For example, some browsers report the Windows key as "OS", while others report it as "Meta". This function will map either to the `Meta` key value.
+-- | Additionally, this function attempts to resolve inconsistencies across different browsers.
+-- | For example, some browsers report the Windows key as "OS",
+-- | while others report it as "Meta".
+-- | This function will map either to the `Meta` key value.
 -- |
 -- | See https://developer.mozilla.org/en-US/docs/Web/API/KeyboardEvent/key/Key_Values for more information.
 keyboardEventToKeyValue :: KeyboardEvent -> Maybe KeyValue

@@ -1,3 +1,20 @@
+-- | Implementation of a Vim-style key bindings map.
+-- |
+-- | The `KeyBindingsMap` type associates key sequences with commands.
+-- | Several key binding styles are supported, including:
+-- | * Traditional modifier key + character key bindings (e.g., Ctrl+z)
+-- | * Vim-style bindings with no modifier key (e.g. "xp" - press "x", then "p")
+-- | * Any combination of the above (e.g., Ctrl+z then "x" then "p")
+-- |
+-- | Additionally, the accessibility of a key binding can be restricted via 
+-- | a scoping mechanism. Each binding is associated with a particular scope.
+-- | During lookups, only bindings belonging to an active scope will be
+-- | considered.
+-- |
+-- | Scopes can be used to implement Vim modes.
+-- |
+-- | `KeyBindingsMap` is parameterized by a scope type and a command type.
+-- | This allows the use of both enums or simple strings for both.
 module Hotkeys.KeyMap
        ( BoundValue(..)
        , KeyBindingsMap
